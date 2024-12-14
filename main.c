@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <GL/freeglut.h>
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
+ma_result result;
+ma_engine engine;
 
 int window_res[] = {1280,720};
 float fps = 60.0;
@@ -14,6 +19,9 @@ float brick_colors[4][3] = {{1.0,0.0,0.0},{1.0,0.5,0.0},{0.0,1.0,0.0},{1.0,1.0,0
 int brick_collide_allow = 1;
 int num_bricks = 100;
 int brick_vals[200];
+
+char sound_path[] = "Beep.mp3";
+char sound_path2[] = "Beep2.mp3";
 
 void reset();
 void reset_ball();
@@ -47,19 +55,19 @@ void display_text(){
     glColor3f(1, 1, 1);
     glRasterPos2f(10, 30);
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, string);
-
 }
 
 void bricks(int first){
     int drawn_bricks = 0;
     int current_color = 0;
     for (int i = 0; i<num_bricks; i++){
-        if (by+(bs/2) >= bry-(brl/2) && by-(bs/2) <= bry+(brl/2) && bx+(bs/2) >= brx-(brw/2) && bx-(bs/2) <= brx+(brw/2) && brick_vals[i] == 1 && brick_collide_allow == 1){
+        if (by+(bs/2) >= bry-(brl/2) && by-(bs/2) <= bry+(brl/2) && bx+(bs/2) >= brx-(brw/2) && bx-(bs/2) <= brx+(brw/2) && brick_vals[i] && brick_collide_allow){
             brick_collide_allow = 0;
             brick_vals[i] = 0;
             bdy = -bdy;
+            ma_engine_play_sound(&engine, sound_path, NULL);
         }
-        if ((first == 0 && brick_vals[i] == 1) || first == 1){
+        if ((!first && brick_vals[i]) || first){
             glColor3f(brick_colors[current_color][0], brick_colors[current_color][1], brick_colors[current_color][2]);
             drawn_bricks += 1;
         } else {
@@ -70,7 +78,7 @@ void bricks(int first){
         glVertex2i(brx,bry);
         glVertex2i(brx,bry+brl);
         glEnd();
-        if (first == 1){
+        if (first){
             brick_vals[i] = 1;
         }
         brx += brw+10;
@@ -137,6 +145,7 @@ void ball_movement(){
     else if (bx < 0){bdx = -bdx;}
     else if (bx > window_res[0]){bdx = -bdx;}
     else if (by >= py-(pl/2) && by <= py+(pl/2) && bx >= px-(pw/1.8) && bx <= px+(pw/1.8)){
+        ma_engine_play_sound(&engine, sound_path2, NULL);
         bdx = (bx-px)/(pw/3);
         if (bdx >= 1){bdy = bdx - 2;}
         else if (bdx <= -1){bdy = -(bdx + 2);}
@@ -173,6 +182,7 @@ void display(){
 }
 
 int main(int argc, char* argv[]){
+    result = ma_engine_init(NULL, &engine);
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(window_res[0], window_res[1]);
